@@ -548,7 +548,7 @@ class _HomeMenuState extends State<HomeMenu> {
 
                                   //==============================================//
                                   Consumer<HomeController>(
-                                    builder: (_, valueValidaTurno, __) {
+                                    builder: (_, valueValidaTurno, __) {  
                                       return Wrap(
                                         alignment: WrapAlignment.center,
                                         children: [
