@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "994577626707",
+    "project_id": "sincop-3b9f0",
+    "storage_bucket": "sincop-3b9f0.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:994577626707:android:b08c53ca3634c000f338a6",
+        "android_client_info": {
+          "package_name": "app_neitor.sincop_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "994577626707-uaj01phr7e3ch37sa0tohu10vv5lpkr5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app_neitor.sincop_app",
+            "certificate_hash": "48ad6f8493066c3a57ed438113e2580f8270c0c4"
+          }
+        },
+        {
+          "client_id": "994577626707-cd5umj7tiustsfbs6j7o3dbiab0egt8o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9MSdbUlf2Xa6Cp_zV_wTSEVHQ1JWgJMo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "994577626707-cd5umj7tiustsfbs6j7o3dbiab0egt8o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
