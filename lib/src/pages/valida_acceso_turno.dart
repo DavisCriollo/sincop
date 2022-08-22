@@ -1,4 +1,3 @@
-
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,7 +10,6 @@ import 'package:sincop_app/src/utils/responsive.dart';
 import 'package:sincop_app/src/utils/theme.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
-
 
 class ValidaAccesoTurno extends StatefulWidget {
   const ValidaAccesoTurno({Key? key}) : super(key: key);
@@ -35,25 +33,23 @@ class _ValidaAccesoTurnoState extends State<ValidaAccesoTurno> {
               title: const Text(
                 'Validar Acceso',
               ),
-               flexibleSpace: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomCenter,
-                  colors: <Color>[
-                    Color(0XFF153E76),
-                    Color(0XFF0076A7),
-                   
-                   
-                   
-                    // Color(0XFF005B97),
-                    // Color(0XFF0075BE),
-                    // Color(0XFF1E9CD7),
-                    // Color(0XFF3DA9F4),
-                  ],
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomCenter,
+                    colors: <Color>[
+                      Color(0XFF153E76),
+                      Color(0XFF0076A7),
+
+                      // Color(0XFF005B97),
+                      // Color(0XFF0075BE),
+                      // Color(0XFF1E9CD7),
+                      // Color(0XFF3DA9F4),
+                    ],
+                  ),
                 ),
               ),
-            ),
             ),
             body: Container(
               padding: EdgeInsets.symmetric(horizontal: size.iScreen(5.0)),
@@ -123,9 +119,7 @@ class _ValidaAccesoTurnoState extends State<ValidaAccesoTurno> {
                       onPressed: () async {
                         //Navigator.pop(context);
 
-                          _submitValidaTurno(size, controllerHome,context);
-                      
-                       
+                        _submitValidaTurno(size, controllerHome, context);
                       },
                       child: Text('Validar',
                           style: GoogleFonts.lexendDeca(
@@ -144,7 +138,7 @@ class _ValidaAccesoTurnoState extends State<ValidaAccesoTurno> {
 
   ///====== MUESTRA MODAL TERMINOS Y CONDICIONES =======//
   void _modalTerminosCondiciones(
-      Responsive size, HomeController homeController ) {
+      Responsive size, HomeController homeController) {
     showDialog(
         barrierDismissible: false,
         context: context,
@@ -253,8 +247,6 @@ class _ValidaAccesoTurnoState extends State<ValidaAccesoTurno> {
                               await homeControllers.validaCodigoTurno(context);
                               // await homeControllers.iniciaTurno(context);
 
-
-
                               ProgressDialog.dissmiss(context);
                               Navigator.pushNamedAndRemoveUntil(context,
                                   "splash", (Route<dynamic> route) => false);
@@ -266,8 +258,6 @@ class _ValidaAccesoTurnoState extends State<ValidaAccesoTurno> {
                                 status == PermissionStatus.limited) {
                               openAppSettings();
                             }
-
-                            
                           }
                         : null,
                     child: Text('Aceptar',
@@ -304,18 +294,17 @@ class _ValidaAccesoTurnoState extends State<ValidaAccesoTurno> {
     // ProgressDialog.show(context);
   }
 
-  void _submitValidaTurno(
-      Responsive size, HomeController controllerHome,BuildContext context) async {
+  void _submitValidaTurno(Responsive size, HomeController controllerHome,
+      BuildContext context) async {
     final isValid = controllerHome.validateForm();
     if (!isValid) return;
-    if (isValid) {
-      final conexion = await Connectivity().checkConnectivity();
-      if (conexion == ConnectivityResult.none) {
-        NotificatiosnService.showSnackBarError('SIN CONEXION A INTERNET');
-      } else if (conexion == ConnectivityResult.wifi ||
-          conexion == ConnectivityResult.mobile) {
-        _modalTerminosCondiciones(size, controllerHome);
-      }
+
+    final conexion = await Connectivity().checkConnectivity();
+    if (conexion == ConnectivityResult.none) {
+      NotificatiosnService.showSnackBarError('SIN CONEXION A INTERNET');
+    } else if (conexion == ConnectivityResult.wifi ||
+        conexion == ConnectivityResult.mobile) {
+      _modalTerminosCondiciones(size, controllerHome);
     }
 
     // _modalInciaTurno(size, controllerHome);

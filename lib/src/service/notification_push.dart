@@ -19,10 +19,11 @@ class PushNotificationService extends ChangeNotifier {
   static FirebaseMessaging messaging = FirebaseMessaging.instance;
   static String? token;
 
-  static final StreamController<String> _menssageStream =
+  static final StreamController<Map<String, dynamic>> _menssageStream =
       StreamController.broadcast();
 
-  static Stream<String> get messageStream => _menssageStream.stream;
+  static Stream<Map<String, dynamic>> get messageStream =>
+      _menssageStream.stream;
 
   static Future _backgroundHandler(RemoteMessage message) async {
     // print('backgroun APP');
@@ -39,12 +40,12 @@ class PushNotificationService extends ChangeNotifier {
 
     // print('holAAAA');
     // print('hola ssssss${message.notification!.title}');
-    _menssageStream.sink.add(message.data['informacion'] ?? 'No data');
+    _menssageStream.sink.add(message.data);
   }
 
   static Future _onMessageHandler(RemoteMessage message) async {
     // print('MESSAGE APPsss');
-    _menssageStream.sink.add(message.data['informacion'] ?? 'No data');
+    _menssageStream.sink.add(message.data);
     // homeController.setPayloadAlerta(message);
     LocalNotifications.showNotification(
       id: 0,
@@ -60,9 +61,8 @@ class PushNotificationService extends ChangeNotifier {
   }
 
   static Future _onMessageOpenApp(RemoteMessage message) async {
-    
     //  homeController.setPayloadAlerta(message);
-    _menssageStream.sink.add(message.data['informacion'] ?? 'No data');
+    _menssageStream.sink.add(message.data);
     LocalNotifications.showNotification(
       id: 0,
       title: 'title OPEN APP',

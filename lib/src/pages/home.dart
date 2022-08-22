@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:badges/badges.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -33,26 +34,26 @@ import 'package:sincop_app/src/widgets/drawer_custom.dart';
 import 'package:sincop_app/src/widgets/item_menu_home.dart';
 
 class HomeMenu extends StatefulWidget {
-  final String? validaTurno;
   final String? ubicacionGPS;
   final Session? user;
   final List<String?>? tipo;
   final AuthResponse? dataUser;
 
-  const HomeMenu(
-      {Key? key,
-      this.validaTurno,
-      this.ubicacionGPS,
-      this.user,
-      this.tipo,
-      this.dataUser})
-      : super(key: key);
+  const HomeMenu({
+    Key? key,
+    this.ubicacionGPS,
+    this.user,
+    this.tipo,
+    this.dataUser,
+  }) : super(key: key);
 
   @override
   State<HomeMenu> createState() => _HomeMenuState();
 }
 
 class _HomeMenuState extends State<HomeMenu> {
+  HomeController get homeController => context.read<HomeController>();
+
   @override
   void initState() {
     WidgetsBinding.instance?.addPostFrameCallback((_) {
@@ -84,35 +85,11 @@ class _HomeMenuState extends State<HomeMenu> {
     } else if (Platform.isWindows) {
 // print('Running on ${windowsInfo.toMap().toString()}');  // e.g. "Moto G (4)"
     }
-    final controller = HomeController();
-    controller.setTipoDispositivo(marcaMovil);
+
+    homeController.connectSocket();
+    homeController.setTipoDispositivo(marcaMovil);
 // =======================================================================================//
-
-    final serviceSocket = Provider.of<SocketService>(context, listen: false);
-
-    final loadInfoNotificacion =
-        Provider.of<HomeController>(context, listen: false);
-    loadInfoNotificacion.buscaNotificacionesPush('');
-    // loadInfoNotificacion.buscaNotificaciones2Push('');
-    // loadInfoNotificacion.cuentaNotificacionesNOLeidas();
-    // loadInfoNotificacion.cuentaNotificaciones2NOLeidas();
-
-    serviceSocket.socket!.on('server:actualizadoExitoso', (data) async {
-      if (data['tabla'] == 'notificacionleido') {
-        loadInfoNotificacion.buscaNotificacionesPush('');
-        // print('FFFF ${data}');
-        // loadInfoNotificacion.buscaNotificaciones2Push('');
-        // loadInfoNotificacion.cuentaNotificacionesNOLeidas();
-        // loadInfoNotificacion.cuentaNotificaciones2NOLeidas();
-      }
-    });
-    serviceSocket.socket!.on('server:nuevanotificacion', (data) async {
-      loadInfoNotificacion.buscaNotificacionesPush('');
-      // loadInfoNotificacion.buscaNotificaciones2Push('');
-      // loadInfoNotificacion.cuentaNotificacionesNOLeidas();
-      // loadInfoNotificacion.cuentaNotificaciones2NOLeidas();
-      // selectNotification(data);
-    });
+    homeController.buscaNotificacionesPush('');
 
 //================================//
     WidgetsFlutterBinding.ensureInitialized();
@@ -157,12 +134,18 @@ class _HomeMenuState extends State<HomeMenu> {
 // }
   }
 
+  @override
+  void dispose() {
+    homeController.disconnectSocket();
+    super.dispose();
+  }
+
   void listenNotifications() =>
       LocalNotifications.onNotification.stream.listen(selectNotification);
 
   void selectNotification(String? payload) async {
-    if (payload != null && payload.isNotEmpty && payload == 'MULTA') {
-      print('SIIIII ES UNA ALERT notification payload: ${payload}');
+    if (payload != null && payload.isNotEmpty) {
+      mostrarNotificationes();
     }
 //  print('NOTIFICACION RECIBIDA: ${payload[0]}');
     // if (payload != null && payload.isNotEmpty && payload== 'Alerta') {
@@ -188,11 +171,19 @@ class _HomeMenuState extends State<HomeMenu> {
     // }
   }
 
+  void mostrarNotificationes() async {
+    await homeController.buscaNotificacionesPush('');
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const ListaNotificacionesPush(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     print('============= RECARGA LA PAGINA ==================');
     final Responsive size = Responsive.of(context);
-    final homeController = Provider.of<HomeController>(context, listen: false);
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -268,16 +259,9 @@ class _HomeMenuState extends State<HomeMenu> {
                             height: 45,
                             padding: EdgeInsets.all(5.0),
                             child: GestureDetector(
-                              onTap: (countPush.getBtnIniciaTurno == true ||
-                                      widget.validaTurno != null)
+                              onTap: countPush.getBtnIniciaTurno
                                   ? () {
-                                      Provider.of<HomeController>(context,
-                                              listen: false)
-                                          .buscaNotificacionesPush('');
-                                      Navigator.of(context).push(MaterialPageRoute(
-                                          builder: (context) =>
-                                              // const ListaConsignasGuardiasPage()
-                                              const ListaNotificacionesPush()));
+                                      mostrarNotificationes();
                                     }
                                   : null,
                               child: CircleAvatar(
@@ -342,21 +326,20 @@ class _HomeMenuState extends State<HomeMenu> {
                           //  Icon(Icons.notifications,size: size.iScreen(3.0),)),
                           IconButton(
                               splashRadius: 28,
-                              onPressed:
-                                  (count2Push.getBtnIniciaTurno == true ||
-                                          widget.validaTurno != null)
-                                      ? () {
-                                          Provider.of<HomeController>(context,
-                                                  listen: false)
-                                              .buscaNotificacionesPush('');
-                                          Navigator.of(context).push(
-                                              MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      // const ListaConsignasGuardiasPage()
-                                                      ListaNotificaciones2Push(
-                                                          user: widget.user)));
-                                        }
-                                      : null,
+                              onPressed: count2Push.getBtnIniciaTurno
+                                  ? () {
+                                      homeController
+                                          .buscaNotificacionesPush('');
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              // const ListaConsignasGuardiasPage()
+                                              ListaNotificaciones2Push(
+                                                  user: widget.user),
+                                        ),
+                                      );
+                                    }
+                                  : null,
                               icon: Icon(
                                 Icons.notifications,
                                 size: size.iScreen(3.5),
@@ -455,12 +438,10 @@ class _HomeMenuState extends State<HomeMenu> {
                                     builder: (_, valueBtnTurno, __) {
                                       return Container(
                                         decoration: BoxDecoration(
-                                            color: (valueBtnTurno
-                                                            .getBtnIniciaTurno ==
-                                                        true ||
-                                                    widget.validaTurno != null)
-                                                ? primaryColor
-                                                : const Color(0XFF3C3C3B),
+                                            color:
+                                                valueBtnTurno.getBtnIniciaTurno
+                                                    ? primaryColor
+                                                    : const Color(0XFF3C3C3B),
                                             borderRadius:
                                                 BorderRadius.circular(10.0)),
                                         width: size.wScreen(55.0),
@@ -474,9 +455,7 @@ class _HomeMenuState extends State<HomeMenu> {
                                             // splashColor:color ,
                                             onPressed: () {
                                               if (valueBtnTurno
-                                                          .getBtnIniciaTurno ==
-                                                      true ||
-                                                  widget.validaTurno != null) {
+                                                  .getBtnIniciaTurno) {
                                                 _modalFinalizarTurno(
                                                     size, homeController);
                                               } else {
@@ -507,35 +486,29 @@ class _HomeMenuState extends State<HomeMenu> {
                                               mainAxisAlignment:
                                                   MainAxisAlignment.spaceAround,
                                               children: [
-                                                (valueBtnTurno.getBtnIniciaTurno ==
-                                                            true ||
-                                                        widget.validaTurno !=
-                                                            null)
+                                                valueBtnTurno
+                                                        .getBtnIniciaTurno
                                                     ? Text(
                                                         'Finalizar Turno ',
                                                         style: GoogleFonts
                                                             .lexendDeca(
-                                                                fontSize: size
-                                                                    .iScreen(
-                                                                        2.0),
-                                                                color: Colors
-                                                                    .white,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .normal),
+                                                          fontSize:
+                                                              size.iScreen(2.0),
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.normal,
+                                                        ),
                                                       )
                                                     : Text(
-                                                        'Iniciar Turno ',
+                                                        'Iniciar Turno',
                                                         style: GoogleFonts
                                                             .lexendDeca(
-                                                                fontSize: size
-                                                                    .iScreen(
-                                                                        2.0),
-                                                                color: Colors
-                                                                    .white,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .normal),
+                                                          fontSize:
+                                                              size.iScreen(2.0),
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.normal,
+                                                        ),
                                                       ),
                                                 // : Container(),
                                                 const Icon(Icons.access_time,
@@ -549,6 +522,8 @@ class _HomeMenuState extends State<HomeMenu> {
                                   //==============================================//
                                   Consumer<HomeController>(
                                     builder: (_, valueValidaTurno, __) {
+                                      print(
+                                          "valueValidaTurno  🔥 ${valueValidaTurno.getBtnIniciaTurno}");
                                       return Wrap(
                                         alignment: WrapAlignment.center,
                                         children: [
@@ -561,10 +536,7 @@ class _HomeMenuState extends State<HomeMenu> {
                                                           'SUPERVISOR'))
                                               ? ItemsMenuHome(
                                                   onTap: (valueValidaTurno
-                                                                  .getBtnIniciaTurno ==
-                                                              true ||
-                                                          widget.validaTurno !=
-                                                              null)
+                                                          .getBtnIniciaTurno)
                                                       ? () {
                                                           // Navigator.pushNamed(
                                                           //     context, 'novedades');
@@ -579,11 +551,8 @@ class _HomeMenuState extends State<HomeMenu> {
                                                       : null,
                                                   label: 'Novedades',
                                                   icon: 'news.png',
-                                                  color: (valueValidaTurno
-                                                                  .getBtnIniciaTurno ==
-                                                              true ||
-                                                          widget.validaTurno !=
-                                                              null)
+                                                  color: valueValidaTurno
+                                                          .getBtnIniciaTurno
                                                       ? const Color(0XFFEF557B)
                                                       : Colors.grey,
                                                 )
@@ -594,11 +563,8 @@ class _HomeMenuState extends State<HomeMenu> {
                                                   widget.tipo!
                                                       .contains('SUPERVISOR'))
                                               ? ItemsMenuHome(
-                                                  onTap: (valueValidaTurno
-                                                                  .getBtnIniciaTurno ==
-                                                              true ||
-                                                          widget.validaTurno !=
-                                                              null)
+                                                  onTap: valueValidaTurno
+                                                          .getBtnIniciaTurno
                                                       ? () {
                                                           Provider.of<ActivitiesController>(
                                                                   context,
@@ -622,11 +588,8 @@ class _HomeMenuState extends State<HomeMenu> {
                                                       : null,
                                                   label: 'Actividades',
                                                   icon: 'activities.png',
-                                                  color: (valueValidaTurno
-                                                                  .getBtnIniciaTurno ==
-                                                              true ||
-                                                          widget.validaTurno !=
-                                                              null)
+                                                  color: valueValidaTurno
+                                                          .getBtnIniciaTurno
                                                       ? Colors.brown
                                                       : Colors.grey,
                                                 )
@@ -636,10 +599,7 @@ class _HomeMenuState extends State<HomeMenu> {
                                           (widget.tipo!.contains('SUPERVISOR'))
                                               ? ItemsMenuHome(
                                                   onTap: (valueValidaTurno
-                                                                  .getBtnIniciaTurno ==
-                                                              true ||
-                                                          widget.validaTurno !=
-                                                              null)
+                                                          .getBtnIniciaTurno)
                                                       ? () {
                                                           // Navigator.pushNamed(
                                                           //           context,
@@ -657,10 +617,7 @@ class _HomeMenuState extends State<HomeMenu> {
                                                   label: 'Logística',
                                                   icon: 'logistic.png',
                                                   color: (valueValidaTurno
-                                                                  .getBtnIniciaTurno ==
-                                                              true ||
-                                                          widget.validaTurno !=
-                                                              null)
+                                                          .getBtnIniciaTurno)
                                                       ? Colors.blue
                                                       : Colors.grey,
                                                 )
@@ -672,10 +629,7 @@ class _HomeMenuState extends State<HomeMenu> {
                                                       .contains('SUPERVISOR'))
                                               ? ItemsMenuHome(
                                                   onTap: (valueValidaTurno
-                                                                  .getBtnIniciaTurno ==
-                                                              true ||
-                                                          widget.validaTurno !=
-                                                              null)
+                                                          .getBtnIniciaTurno)
                                                       ? () {
                                                           // informeController
                                                           //     .buscaInformeGuardias(
@@ -685,21 +639,22 @@ class _HomeMenuState extends State<HomeMenu> {
                                                           //             false)
                                                           //     .buscaInformeGuardias(
                                                           //         '');
-                                                          Navigator.of(context).push(
-                                                              MaterialPageRoute(
-                                                                  builder: (context) =>
-                                                                      ListaInformesGuardiasPage(
-                                                                          usuario:
-                                                                              widget.user)));
+                                                          Navigator.of(context)
+                                                              .push(
+                                                            MaterialPageRoute(
+                                                              builder: (context) =>
+                                                                  ListaInformesGuardiasPage(
+                                                                      usuario:
+                                                                          widget
+                                                                              .user),
+                                                            ),
+                                                          );
                                                         }
                                                       : null,
                                                   label: 'Informes',
                                                   icon: 'report.png',
                                                   color: (valueValidaTurno
-                                                                  .getBtnIniciaTurno ==
-                                                              true ||
-                                                          widget.validaTurno !=
-                                                              null)
+                                                          .getBtnIniciaTurno)
                                                       ? Colors.green
                                                       : Colors.grey,
                                                 )
@@ -721,10 +676,7 @@ class _HomeMenuState extends State<HomeMenu> {
                                                       .contains('GUARDIA'))
                                               ? ItemsMenuHome(
                                                   onTap: (valueValidaTurno
-                                                                  .getBtnIniciaTurno ==
-                                                              true ||
-                                                          widget.validaTurno !=
-                                                              null)
+                                                          .getBtnIniciaTurno)
                                                       ? () {
                                                           if (widget.tipo!
                                                               .contains(
@@ -744,11 +696,8 @@ class _HomeMenuState extends State<HomeMenu> {
                                                       : null,
                                                   label: 'Consignas',
                                                   icon: 'control.png',
-                                                  color: (valueValidaTurno
-                                                                  .getBtnIniciaTurno ==
-                                                              true ||
-                                                          widget.validaTurno !=
-                                                              null)
+                                                  color: valueValidaTurno
+                                                          .getBtnIniciaTurno
                                                       ? Colors.cyan
                                                       : Colors.grey)
                                               : const SizedBox(),
@@ -759,29 +708,26 @@ class _HomeMenuState extends State<HomeMenu> {
                                                   widget.tipo!
                                                       .contains('SUPERVISOR'))
                                               ? ItemsMenuHome(
-                                                  onTap: (valueValidaTurno
-                                                                  .getBtnIniciaTurno ==
-                                                              true ||
-                                                          widget.validaTurno !=
-                                                              null)
+                                                  onTap: valueValidaTurno
+                                                          .getBtnIniciaTurno
                                                       ? () {
-                                                          if (valueValidaTurno
-                                                                      .getBtnIniciaTurno ==
-                                                                  true ||
-                                                              widget.validaTurno !=
-                                                                  null) {
-                                                            (widget.tipo!.contains(
-                                                                    'CLIENTE'))
-                                                                ? Navigator
-                                                                    .pushNamed(
-                                                                        context,
-                                                                        'listaComunicadosClientes')
-                                                                : Navigator.of(
-                                                                        context)
-                                                                    .push(MaterialPageRoute(
-                                                                        builder:
-                                                                            (context) =>
-                                                                                const ListaComunicadosGuardiasPage()));
+                                                          if (widget.tipo!
+                                                              .contains(
+                                                                  'CLIENTE')) {
+                                                            Navigator.pushNamed(
+                                                              context,
+                                                              'listaComunicadosClientes',
+                                                            );
+                                                          } else {
+                                                            Navigator.of(
+                                                                    context)
+                                                                .push(
+                                                              MaterialPageRoute(
+                                                                builder:
+                                                                    (context) =>
+                                                                        const ListaComunicadosGuardiasPage(),
+                                                              ),
+                                                            );
                                                           }
 
                                                           //  Navigator.pushNamed(
@@ -792,11 +738,8 @@ class _HomeMenuState extends State<HomeMenu> {
                                                       : null,
                                                   label: 'Comunicados',
                                                   icon: 'megaphone.png',
-                                                  color: (valueValidaTurno
-                                                                  .getBtnIniciaTurno ==
-                                                              true ||
-                                                          widget.validaTurno !=
-                                                              null)
+                                                  color: valueValidaTurno
+                                                          .getBtnIniciaTurno
                                                       ? Colors.deepOrange
                                                       : Colors.grey,
                                                 )
@@ -843,17 +786,12 @@ class _HomeMenuState extends State<HomeMenu> {
                                                         const Color(0XFFFB473B),
                                                     onPressed: () async {
                                                       // homeController.enviaAlerta(
-                                                      Provider.of<HomeController>(
-                                                              context,
-                                                              listen: false)
-                                                          .enviaAlerta(
-                                                              widget.user!
-                                                                  .usuario!,
-                                                              widget.tipo,
-                                                              widget.user!
-                                                                  .rucempresa!,
-                                                              widget
-                                                                  .ubicacionGPS);
+                                                      homeController.enviaAlerta(
+                                                          widget.user!.usuario!,
+                                                          widget.tipo,
+                                                          widget.user!
+                                                              .rucempresa!,
+                                                          widget.ubicacionGPS);
                                                     },
                                                     child: Column(
                                                       mainAxisAlignment:

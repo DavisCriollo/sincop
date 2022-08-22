@@ -17,7 +17,7 @@ class SplashPage extends StatefulWidget {
 
 class _SplashPageState extends State<SplashPage> {
   final controllerLogin = LoginController();
-  final controllerHome = HomeController();
+
 
   @override
   void initState() {
@@ -35,7 +35,7 @@ class _SplashPageState extends State<SplashPage> {
     if (session != null) {
       final controllerHome = HomeController();
       controllerHome.setValidaBtnTurno((validaTurno != null) ? true : false);
-       final status = await Permission.location.request();
+      final status = await Permission.location.request();
       if (status == PermissionStatus.granted) {
         // print('============== SI TIENE PERMISOS');
         await controllerHome.getCurrentPosition();
@@ -52,27 +52,24 @@ class _SplashPageState extends State<SplashPage> {
 
           Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
-                  builder: (context) => HomeMenu(
-                      validaTurno: validaTurno,
-                      tipo: session.rol,
-                      user: session,
-                      ubicacionGPS: controllerHome.getCoords)),
+                builder: (context) => HomeMenu(
+                    tipo: session.rol,
+                    user: session,
+                    ubicacionGPS: controllerHome.getCoords),
+              ),
               (Route<dynamic> route) => false);
-              ModalRoute.withName('/');
+          ModalRoute.withName('/');
         }
       } else {
         // print('============== NOOOO TIENE PERMISOS');
         Navigator.pushNamed(context, 'gps');
       }
     } else {
-
       // Navigator.pushReplacementNamed(context, 'login');
       Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(
-                  builder: (context) => const LoginPage(
-                      )),
-              (Route<dynamic> route) => false);
-              // ModalRoute.withName('/');
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false);
+      // ModalRoute.withName('/');
     }
   }
 

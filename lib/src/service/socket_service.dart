@@ -13,10 +13,8 @@ enum ServerStatus {
   Connecting,
 }
 
-class SocketService extends ChangeNotifier {
+class SocketService {
   ServerStatus _serverStatus = ServerStatus.Connecting;
-
-  
 
 // EXPONER DE MANERA PRIVADA PARA CONTROLAR LA MANERA DE EXPOSICION AL MUBDO , PANTALLA, CLASE
   late IO.Socket? _socket;
@@ -28,7 +26,6 @@ class SocketService extends ChangeNotifier {
   IO.Socket? get socket => _socket;
 
   SocketService() {
-   
     _initConfig();
   }
 
@@ -53,18 +50,14 @@ class SocketService extends ChangeNotifier {
     _socket?.onConnect((_) {
       // print('David conectado desde Flutter !!! ');
       _serverStatus = ServerStatus.Online;
-      
-      NotificatiosnService.showSnackBarDanger("Bienvenido");
 
-      notifyListeners();
+      NotificatiosnService.showSnackBarDanger("Bienvenido");
     });
 
     _socket?.onDisconnect((_) {
-      print('disconnect');
       _serverStatus = ServerStatus.Ofline;
       // NotificatiosnService.showSnackBarError("Sin Conexión");
       _socket = null;
-      notifyListeners();
     });
 
     //======================================== FUNCION PARA RESPONDER AL SOCKET==============================================//
@@ -72,7 +65,7 @@ class SocketService extends ChangeNotifier {
 //     final controllerInformes = InformeController();
 // print('========================PAILOAD=================================');
     // print('$_pyloadDataIniciaTurno');
-   
+
     // _socket!.on('server:guardadoExitoso', (data) async {
     //   if (data['tabla'] == 'registro') {
 
@@ -131,7 +124,10 @@ class SocketService extends ChangeNotifier {
     //     notifyListeners();
     //   });
     // }
+  }
 
-   
+  void disconnect() {
+    _socket?.disconnect();
+    _socket = null;
   }
 }
