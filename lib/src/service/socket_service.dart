@@ -30,6 +30,7 @@ class SocketService {
   }
 
   void _initConfig() {
+    print('🐶');
     // Dart client
     // _socket = IO.io('https://contabackend.neitor.com', {
     // _socket = IO.io('http://192.168.1.4:3000', {
@@ -51,13 +52,13 @@ class SocketService {
       // print('David conectado desde Flutter !!! ');
       _serverStatus = ServerStatus.Online;
 
-      NotificatiosnService.showSnackBarDanger("Bienvenido");
+      // NotificatiosnService.showSnackBarDanger("Bienvenido");
     });
 
     _socket?.onDisconnect((_) {
+      print('🔥 disconnected');
       _serverStatus = ServerStatus.Ofline;
       // NotificatiosnService.showSnackBarError("Sin Conexión");
-      _socket = null;
     });
 
     //======================================== FUNCION PARA RESPONDER AL SOCKET==============================================//
@@ -127,7 +128,7 @@ class SocketService {
   }
 
   void disconnect() {
-    _socket?.disconnect();
-    _socket = null;
+    // _socket?.disconnect();
+    // _socket = null;
   }
 }

@@ -89,11 +89,11 @@ class HomeController extends ChangeNotifier {
         // Navigator.of(context).pop();
       }
     });
-    _serviceSocket!.socket?.on('server:error', (data) {
-      NotificatiosnService.showSnackBarError(data['msg']);
-    });
+
     _serviceSocket?.socket?.on('server:actualizadoExitoso', (data) async {
       final tabla = data['tabla'];
+
+      print('🔥 tabla $tabla');
 
       if (tabla == 'notificacionleido') {
         buscaNotificacionesPush('');
@@ -104,10 +104,14 @@ class HomeController extends ChangeNotifier {
         _btnIniciaTurno = false;
         setBtnIniciaTurno(false);
         notifyListeners();
+        print('🔥 saved');
       }
     });
     _serviceSocket?.socket?.on('server:nuevanotificacion', (data) async {
       buscaNotificacionesPush('');
+    });
+    _serviceSocket!.socket?.on('server:error', (data) {
+      NotificatiosnService.showSnackBarError(data['msg']);
     });
   }
 

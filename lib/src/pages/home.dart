@@ -136,6 +136,7 @@ class _HomeMenuState extends State<HomeMenu> {
 
   @override
   void dispose() {
+    print(' homeController.disconnectSocket');
     homeController.disconnectSocket();
     super.dispose();
   }
@@ -182,7 +183,6 @@ class _HomeMenuState extends State<HomeMenu> {
 
   @override
   Widget build(BuildContext context) {
-    print('============= RECARGA LA PAGINA ==================');
     final Responsive size = Responsive.of(context);
 
     return GestureDetector(
@@ -486,8 +486,7 @@ class _HomeMenuState extends State<HomeMenu> {
                                               mainAxisAlignment:
                                                   MainAxisAlignment.spaceAround,
                                               children: [
-                                                valueBtnTurno
-                                                        .getBtnIniciaTurno
+                                                valueBtnTurno.getBtnIniciaTurno
                                                     ? Text(
                                                         'Finalizar Turno ',
                                                         style: GoogleFonts
