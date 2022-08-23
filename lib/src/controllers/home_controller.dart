@@ -57,10 +57,62 @@ class HomeController extends ChangeNotifier {
 
   Timer? _deboucerSearchCompras;
 
+  SocketService? _serviceSocket;
+
   @override
   void dispose() {
     _deboucerSearchCompras?.cancel();
     super.dispose();
+  }
+
+  Future<void> connectSocket() async {
+    if (_serviceSocket != null) {
+      return;
+    }
+
+    final validaTurno = await Auth.instance.getTurnoSession();
+
+    _validaBtnTurno = validaTurno == 'INICIATURNO';
+    _btnIniciaTurno = _validaBtnTurno!;
+
+    _serviceSocket = SocketService();
+
+    _serviceSocket!.socket?.on('server:guardadoExitoso', (data) async {
+      if (data['tabla'] == 'registro') {
+        // print('====RESPUESTA INICIA TURNO $data');
+        await Auth.instance.saveTurnoSession(true);
+        _validaBtnTurno = true;
+        _btnIniciaTurno = true;
+
+        // NotificatiosnService.showSnackBarSuccsses(data['msg']);
+        notifyListeners();
+        // Navigator.of(context).pop();
+      }
+    });
+    _serviceSocket!.socket?.on('server:error', (data) {
+      NotificatiosnService.showSnackBarError(data['msg']);
+    });
+    _serviceSocket?.socket?.on('server:actualizadoExitoso', (data) async {
+      final tabla = data['tabla'];
+
+      if (tabla == 'notificacionleido') {
+        buscaNotificacionesPush('');
+      } else if (tabla == 'registro') {
+        //========variable inicia turno======//
+        await Auth.instance.deleteTurnoSesion();
+
+        _btnIniciaTurno = false;
+        setBtnIniciaTurno(false);
+        notifyListeners();
+      }
+    });
+    _serviceSocket?.socket?.on('server:nuevanotificacion', (data) async {
+      buscaNotificacionesPush('');
+    });
+  }
+
+  void disconnectSocket() {
+    _serviceSocket?.disconnect();
   }
 
   String _nameSearch = "";
@@ -257,8 +309,6 @@ class HomeController extends ChangeNotifier {
 
 //================== VALIDA CODIGO QR INICIA TURNO ===========================//
   Future<void> validaCodigoQRTurno(BuildContext context) async {
-    final serviceSocket = SocketService();
-
     // print(
     //     '========================= INICIAR TURNO ================================');
     // print('SCANEO----->:$_infoQRTurno');
@@ -292,30 +342,11 @@ class HomeController extends ChangeNotifier {
 
     // print('========================PAILOAD=================================');
     // print('$_pyloadDataIniciaTurno');
-    serviceSocket.socket!.emit('client:guardarData', _pyloadDataIniciaTurno);
-    serviceSocket.socket!.on('server:guardadoExitoso', (data) async {
-      if (data['tabla'] == 'registro') {
-        // print('====RESPUESTA INICIA TURNO $data');
-        await Auth.instance.saveTurnoSession(true);
-        _validaBtnTurno = true;
-        NotificatiosnService.showSnackBarSuccsses(data['msg']);
-
-        serviceSocket.socket?.clearListeners();
-        notifyListeners();
-        // Navigator.of(context).pop();
-      }
-    });
-    serviceSocket.socket?.on('server:error', (data) {
-      NotificatiosnService.showSnackBarError(data['msg']);
-      serviceSocket.socket?.clearListeners();
-      notifyListeners();
-    });
+    _serviceSocket?.socket!.emit('client:guardarData', _pyloadDataIniciaTurno);
   }
 
 //================== VALIDA CODIGO INICIA TURNO ===========================//
   Future<void> validaCodigoTurno(BuildContext context) async {
-    // final serviceSocket = Provider.of<SocketService>(context, listen: false);
-    final serviceSocket = SocketService();
     // print(
     // '========================= INICIAR TURNO ================================');
     // print('SCANEO----->:$_infoQRTurno');
@@ -349,45 +380,8 @@ class HomeController extends ChangeNotifier {
 
     // print('========================PAILOAD=================================');
     // print(' INICIA TURNO    $_pyloadDataIniciaTurno');
-    serviceSocket.socket!.emit('client:guardarData', _pyloadDataIniciaTurno);
-    serviceSocket.socket!.on('server:guardadoExitoso', (data) async {
-      if (data['tabla'] == 'registro') {
-        // print('valida inicioar turno====> $data');
-        //      print('========================PAILOAD=================================');
-        // print('DATA INICIA TURNO OK=======> :    ${data['msg']}');
-        // print('ID REGISTRO:    ${data['regId']}');
-        // print('ID REGISTRO type:    ${data['regId']}');
-        await Auth.instance.saveIdRegistro('${data['regId']}');
-
-        final datosLogin = {
-          "turno": true,
-          "user": data['regDocumento'],
-        };
-        await Auth.instance.saveTurnoSession(true);
-        await Auth.instance.saveTurnoSessionUser(datosLogin);
-
-// setValidaBtnTurno(true);
-
-        // _validaBtnTurno = true;
-
-        //========variable inicia turno======//
-        setBtnIniciaTurno(true);
-        //====================================//
-
-        // NotificatiosnService.showSnackBarSuccsses(data['msg']);
-        // serviceSocket.socket?.clearListeners();
-        notifyListeners();
-        // Navigator.of(context).pop();
-      }
-    });
-    serviceSocket.socket?.on('server:error', (data) {
-      // print('DATA INICIA TURNO error=======> :    ${data['msg']}');
-      NotificatiosnService.showSnackBarError(data['msg']);
-      // serviceSocket.socket?.clearListeners();
-      notifyListeners();
-    });
+    _serviceSocket?.socket?.emit('client:guardarData', _pyloadDataIniciaTurno);
   }
-
 
 //========================== GUARDA TOKEN DDE LA NOTIFICACION =======================//
   String? _tokennotificacion;
@@ -576,7 +570,6 @@ class HomeController extends ChangeNotifier {
 
   //====================== LEER LA NOTIFICACION_1
   Future leerNotificacionPush(dynamic notificacion) async {
-    final serviceSocket = SocketService();
     final infoUserLogin = await Auth.instance.getSession();
     final infoUserTurno = await Auth.instance.getTurnoSessionUsuario();
 
@@ -622,8 +615,10 @@ class HomeController extends ChangeNotifier {
     // print(_pyloadNotificacionPushLeida);
     // print(
     // '==========================JSON DE PERSONAL DEIGNADO ===============================');
-    serviceSocket.socket!
-        .emit('client:actualizarData', _pyloadNotificacionPushLeida);
+    _serviceSocket?.socket?.emit(
+      'client:actualizarData',
+      _pyloadNotificacionPushLeida,
+    );
   }
 
   //====================== LEER LA NOTIFICACION_2
@@ -689,7 +684,6 @@ class HomeController extends ChangeNotifier {
 
   //====================== LEER LA NOTIFICACION_2
   Future leerNotificacionPushGeneric(dynamic notificacion) async {
-    final serviceSocket = SocketService();
     final infoUserLogin = await Auth.instance.getSession();
     final infoUserTurno = await Auth.instance.getTurnoSessionUsuario();
 
@@ -755,8 +749,10 @@ class HomeController extends ChangeNotifier {
     //   "notNotificacionPertenece": notificacion['notNotificacionPertenece'],
     //   "notEmpresa": notificacion['notEmpresa'],
 
-    serviceSocket.socket!
-        .emit('client:actualizarData', _payloadNotificacionGeneric);
+    _serviceSocket?.socket?.emit(
+      'client:actualizarData',
+      _payloadNotificacionGeneric,
+    );
   }
 
   void enviaAlerta(
@@ -765,8 +761,6 @@ class HomeController extends ChangeNotifier {
     String? rucempresa,
     String? coordenadas,
   ) {
-    final serviceSocket = SocketService();
-
     //  print('usuario: $usuario');
     //  print('rol: $rol');
     //  print('rucempresa: $rucempresa');
@@ -790,7 +784,10 @@ class HomeController extends ChangeNotifier {
     // print(
     //     '==========================JSON PARA GENERAR ALARMA ===============================');
     // print(_pyloadEnviaAlerta);
-    serviceSocket.socket!.emit('client:alerta', _pyloadEnviaAlerta);
+    _serviceSocket?.socket?.emit(
+      'client:alerta',
+      _pyloadEnviaAlerta,
+    );
 
 // socket.emit('client:alerta', {
 //       usuario: '1311060378',
@@ -852,30 +849,21 @@ class HomeController extends ChangeNotifier {
 
 // ============== ACTIVAMOS EL BOTON DE INICIAR TURNO ================//
 
-  bool? _btnIniciaTurno = false;
-  bool? get getBtnIniciaTurno => _btnIniciaTurno;
+  bool _btnIniciaTurno = false;
+  bool get getBtnIniciaTurno => _btnIniciaTurno;
 
-  void setBtnIniciaTurno(bool? value) async {
-    print('object');
-  //   if (value == false) {
-  //     await Auth.instance.deleteTurnoSesion();
-  //     _btnIniciaTurno = false;
-  //        notifyListeners();
-  //     print('BOTON INICIA TURNO ESTADO :$_btnIniciaTurno');
-  //   } else {
-  //     _btnIniciaTurno = true;
-  //     print('BOTON INICIA TURNO ESTADO :$_btnIniciaTurno');
-  //        notifyListeners();
-  //   }
-    // notifyListeners();
+  void setBtnIniciaTurno(bool value) async {
+    if (!value) {
+      await Auth.instance.deleteTurnoSesion();
+    }
+    _btnIniciaTurno = value;
+    notifyListeners();
   }
-
-
 
 //==================FINALIZA TURNO ===========================//
   Future<void> finalizarTurno(BuildContext context) async {
     // final serviceSocket = Provider.of<SocketService>(context, listen: false);
-    final serviceSocket = SocketService();
+
     final infoUser = await Auth.instance.getSession();
     final idRegistro = await Auth.instance.getIdRegistro();
 
@@ -886,40 +874,9 @@ class HomeController extends ChangeNotifier {
       "regId": idRegistro, // va vacio
     };
 
-    serviceSocket.socket!
-        .emit('client:actualizarData', _pyloadDataFinaizaTurno);
-    serviceSocket.socket!.on('server:actualizadoExitoso', (data) async {
-      if (data['tabla'] == 'registro') {
-        //========variable inicia turno======//
-        await Auth.instance.deleteTurnoSesion();
-        setBtnIniciaTurno(false);
-        // await Auth.instance.deleteTurnoSesionUser();
-//  await Auth.instance.saveTurnoSession(true);
-
-        //====================================//
-        // NotificatiosnService.showSnackBarSuccsses(data['msg']);
-        // serviceSocket.socket?.clearListeners();
-        notifyListeners();
-
-        // Navigator.of(context).push(
-        //      MaterialPageRoute(
-        //     builder: (context) => SplashPage(),
-        //   ),
-        // );
-      }
-    });
-
-    serviceSocket.socket?.on('server:error', (data) async {
-      //========variable inicia turno======//
-      setBtnIniciaTurno(false);
-      await Auth.instance.deleteTurnoSesion();
-      //====================================//
-      NotificatiosnService.showSnackBarError(data['msg']);
-
-      notifyListeners();
-    });
+    _serviceSocket?.socket?.emit(
+      'client:actualizarData',
+      _pyloadDataFinaizaTurno,
+    );
   }
-
-
-
 }

@@ -30,23 +30,35 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({Key? key}) : super(key: key);
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final homeController = HomeController();
+
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance!.addPostFrameCallback(
+      (_) {
+        SystemChrome.setPreferredOrientations([
+          DeviceOrientation.portraitUp,
+          DeviceOrientation.portraitDown,
+        ]);
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-final homeController=HomeController();
-
-
-
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => PushNotificationService()),
-        ChangeNotifierProvider(create: (_) => SocketService()),
         ChangeNotifierProvider(create: (_) => HomeController()),
         ChangeNotifierProvider(create: (_) => ActividadesController()),
         ChangeNotifierProvider(create: (_) => ComunicadosController()),
@@ -81,8 +93,6 @@ final homeController=HomeController();
           // visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
         initialRoute: 'splash',
-     
-      
 
         // initialRoute: 'compras',
         routes: appRoutes,
